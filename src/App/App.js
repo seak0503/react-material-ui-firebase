@@ -15,7 +15,6 @@ import { createMuiTheme, MuiThemeProvider } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
 import Snackbar from '@material-ui/core/Snackbar';
 
-import colors from '../colors';
 import settings from '../settings';
 import constraints from '../constraints';
 
@@ -37,13 +36,7 @@ const performance = firebase.performance();
 
 auth.useDeviceLanguage();
 
-let theme = createMuiTheme({
-  palette: {
-    primary: settings.theme.primaryColor.import,
-    secondary: settings.theme.secondaryColor.import,
-    type: settings.theme.type
-  }
-});
+let theme;
 
 class App extends Component {
   _isMounted = false;
@@ -52,19 +45,12 @@ class App extends Component {
     super(props);
 
     this.state = {
-      primaryColor: settings.theme.primaryColor.name,
-      secondaryColor: settings.theme.secondaryColor.name,
-      type: settings.theme.type,
-
       isAuthReady: false,
       isPerformingAuthAction: false,
       isVerifyingEmailAddress: false,
       isSignedIn: false,
 
       user: null,
-      avatar: '',
-      displayName: '',
-      emailAddress: '',
 
       signUpDialog: {
         open: false
@@ -83,7 +69,7 @@ class App extends Component {
       },
 
       settingsDialog: {
-        open: false
+        open: true
       },
 
       signOutDialog: {
@@ -437,84 +423,6 @@ class App extends Component {
     });
   };
 
-  updateTheme = (palette, removeLocalStorage, callback) => {
-    const { primaryColor, secondaryColor, type } = this.state;
-
-    if (!palette.primaryColor) {
-      palette.primaryColor = primaryColor;
-    }
-
-    if (!palette.secondaryColor) {
-      palette.secondaryColor = secondaryColor;
-    }
-
-    if (!palette.type) {
-      palette.type = type;
-    }
-
-    theme = createMuiTheme({
-      palette: {
-        primary: colors.find(color => color.id === palette.primaryColor).import,
-        secondary: colors.find(color => color.id === palette.secondaryColor).import,
-        type: palette.type
-      }
-    });
-
-    this.setState({
-      primaryColor: palette.primaryColor,
-      secondaryColor: palette.secondaryColor,
-      type: palette.type
-    }, () => {
-      if (removeLocalStorage) {
-        localStorage.removeItem('theme');
-      } else {
-        localStorage.setItem('theme', JSON.stringify({
-          primaryColor: palette.primaryColor,
-          secondaryColor: palette.secondaryColor,
-          type: palette.type
-        }));
-      }
-
-      if (callback && typeof callback === 'function') {
-        callback();
-      }
-    });
-  };
-
-  resetTheme = () => {
-    this.updateTheme({
-      primaryColor: settings.theme.primaryColor.name,
-      secondaryColor: settings.theme.secondaryColor.name,
-      type: settings.theme.type
-    }, true, () => {
-      this.openSnackbar('Settings reset');
-    });
-  };
-
-  changePrimaryColor = (event) => {
-    const primaryColor = event.target.value;
-
-    this.updateTheme({
-      primaryColor
-    });
-  };
-
-  changeSecondaryColor = (event) => {
-    const secondaryColor = event.target.value;
-
-    this.updateTheme({
-      secondaryColor
-    });
-  };
-
-  changeType = (event) => {
-    const type = event.target.value;
-
-    this.updateTheme({
-      type
-    });
-  };
-
   openSnackbar = (message) => {
     this.setState({
       snackbar: {
@@ -538,12 +446,8 @@ class App extends Component {
 
   render() {
     const {
-      primaryColor,
-      secondaryColor,
-      type,
       isAuthReady,
       isPerformingAuthAction,
-      isVerifyingEmailAddress,
       isSignedIn,
       user
     } = this.state;
@@ -663,19 +567,8 @@ class App extends Component {
                         },
 
                         props: {
-                          user: user,
-                          isPerformingAuthAction: isPerformingAuthAction,
-                          isVerifyingEmailAddress: isVerifyingEmailAddress,
-                          colors: colors,
-                          primaryColor: primaryColor,
-                          secondaryColor: secondaryColor,
-                          type: type,
-                          defaultTheme: settings.theme,
-
-                          onPrimaryColorChange: this.changePrimaryColor,
-                          onSecondaryColorChange: this.changeSecondaryColor,
-                          onTypeChange: this.changeType,
-                          onResetClick: this.resetTheme
+                          onPrimaryColorMenuItemClick: this.changePrimaryColor,
+                          onSecondaryColorMenuItemClick: this.changeSecondaryColor
                         }
                       },
 
@@ -713,12 +606,6 @@ class App extends Component {
 
   componentDidMount() {
     this._isMounted = true;
-
-    const theme = JSON.parse(localStorage.getItem('theme'));
-
-    if (theme) {
-      this.updateTheme(theme);
-    }
 
     this.removeAuthObserver = firebase.auth().onAuthStateChanged((user) => {
       if (this._isMounted) {
